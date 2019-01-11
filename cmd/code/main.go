@@ -14,5 +14,5 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	fmt.Println("Code:", code)
+	fmt.Println(code)
 }
