@@ -7,36 +7,68 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
 const (
-	baseURL   = "https://www.bkvousecoute.fr"
-	userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
+	baseURL = "https://www.bkvousecoute.fr"
+
+	userAgentHeader = "User-Agent"
+	userAgent       = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
+
+	contentTypeHeader = "Content-Type"
+	contentType       = "application/x-www-form-urlencoded"
+
+	startBodyClass  = "CookieSplashPage"
+	entryBodyClass  = "CouponEntryPage"
+	finishBodyClass = "Finish"
 
 	surveyEntryId = "surveyEntryForm"
 	surveyId      = "surveyForm"
+	indexId       = "IoNF"
+	codeClass     = "ValCode"
 
-	requiredRequests = 20
+	formAttr  = "action"
+	indexAttr = "value"
+
+	fipKey       = "FIP"
+	fipValue     = "True"
+	jsKey        = "JavaScriptEnabled"
+	jsValue      = "1"
+	cookiesKey   = "AcceptCookies"
+	cooliesValue = "Y"
+
+	indexKey      = "IoNF"
+	surveyCodeKey = "SurveyCode"
+	dayKey        = "InputDay"
+	monthKey      = "InputMonth"
+	yearKey       = "InputYear"
+	hourKey       = "InputHour"
+	minuteKey     = "InputMinute"
+
+	requiredRequests = 18
 )
 
 var (
 	ErrInvalidAPIResponse = errors.New("invalid response from the website")
-	ErrFormNotFound       = errors.New("cannot found form from the response")
+	ErrFormNotFound       = errors.New("cannot find form from the response")
+	ErrInvalidCode        = errors.New("cannot parse code from the page")
+	ErrTooManyRequest     = errors.New("too many requests")
+	ErrInvalidIndex       = errors.New("cannot find index from value")
 )
 
-func NewCodeGenerator() *CodeGenerator {
-	jar, _ := cookiejar.New(nil)
+func GenerateCode(meal *Meal) (code string, err error) {
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return
+	}
 	client := http.Client{Jar: jar}
 
-	return &CodeGenerator{&client}
-}
+	if meal == nil {
+		meal = RandomMeal()
+	}
 
-type CodeGenerator struct {
-	client *http.Client
-}
-
-func (c *CodeGenerator) Generate() (code string, err error) {
 	req, err := buildFirstRequest()
 	if err != nil {
 		return
@@ -51,11 +83,11 @@ func (c *CodeGenerator) Generate() (code string, err error) {
 	requestCount := 0
 	for {
 		if requestCount > requiredRequests {
-			err = ErrInvalidAPIResponse
+			err = ErrTooManyRequest
 			break
 		}
 
-		resp, err = c.client.Do(req)
+		resp, err = client.Do(req)
 		if err != nil {
 			break
 		}
@@ -73,8 +105,8 @@ func (c *CodeGenerator) Generate() (code string, err error) {
 		requestCount++
 		body := doc.Find("body")
 
-		if body.HasClass("Finish") {
-			code = strings.Split(doc.Find(".ValCode").Text(), " : ")[1]
+		if body.HasClass(finishBodyClass) {
+			code, err = parseCode(doc)
 			break
 		}
 
@@ -83,13 +115,13 @@ func (c *CodeGenerator) Generate() (code string, err error) {
 			break
 		}
 
-		if body.HasClass("CookieSplashPage") {
-			req, err = buildEntryRequest(nextAction)
+		if body.HasClass(startBodyClass) {
+			req, err = buildStartRequest(nextAction)
 			if err != nil {
 				break
 			}
-		} else if body.HasClass("CouponEntryPage") {
-			req, err = buildEntryRequest(nextAction)
+		} else if body.HasClass(entryBodyClass) {
+			req, err = buildEntryRequest(nextAction, meal)
 			if err != nil {
 				break
 			}
@@ -110,7 +142,7 @@ func (c *CodeGenerator) Generate() (code string, err error) {
 }
 
 func addUserAgent(req *http.Request) {
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set(userAgentHeader, userAgent)
 }
 
 func buildDocument(resp *http.Response) (doc *goquery.Document, err error) {
@@ -125,12 +157,12 @@ func buildDocument(resp *http.Response) (doc *goquery.Document, err error) {
 }
 
 func parseAction(doc *goquery.Document) (nextAction string, err error) {
-	nextAction, exists := doc.Find("#" + surveyId).Attr("action")
+	nextAction, exists := doc.Find("#" + surveyId).Attr(formAttr)
 	if exists {
 		return
 	}
 
-	nextAction, exists = doc.Find("#" + surveyEntryId).Attr("action")
+	nextAction, exists = doc.Find("#" + surveyEntryId).Attr(formAttr)
 	if exists {
 		return
 	}
@@ -140,16 +172,38 @@ func parseAction(doc *goquery.Document) (nextAction string, err error) {
 }
 
 func parseIndex(doc *goquery.Document) (index string, err error) {
-	index, exists := doc.Find("#IoNF").Attr("value")
+	index, exists := doc.Find("#" + indexId).Attr(indexAttr)
 	if !exists {
-		err = ErrInvalidAPIResponse
+		err = ErrInvalidIndex
 	}
 
 	return
 }
 
+func parseCode(doc *goquery.Document) (code string, err error) {
+	parts := strings.Split(doc.Find("."+codeClass).Text(), " : ")
+	if len(parts) != 2 {
+		err = ErrInvalidCode
+		return
+	}
+
+	code = parts[1]
+	return
+}
+
 func buildUrl(action string) string {
 	return fmt.Sprintf("%s/%s", baseURL, action)
+}
+
+func padTo2(value int) string {
+	return fmt.Sprintf("%02d", value)
+}
+
+func commonParams() *url.Values {
+	data := url.Values{}
+	data.Set(jsKey, jsValue)
+	data.Set(cookiesKey, cooliesValue)
+	return &data
 }
 
 func buildFirstRequest() (req *http.Request, err error) {
@@ -161,34 +215,40 @@ func buildFirstRequest() (req *http.Request, err error) {
 	return
 }
 
-func commonParams() *url.Values {
-	data := url.Values{}
-	data.Set("JavaScriptEnabled", "1")
-	data.Set("AcceptCookies", "Y")
-	return &data
-}
-
 func buildCommonRequest(action string, data *url.Values) (req *http.Request, err error) {
 	req, err = http.NewRequest(http.MethodPost, buildUrl(action), strings.NewReader(data.Encode()))
 	if err != nil {
 		return
 	}
 	addUserAgent(req)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set(contentTypeHeader, contentType)
 
 	return
 }
 
-func buildEntryRequest(action string) (req *http.Request, err error) {
+func buildStartRequest(action string) (req *http.Request, err error) {
 	data := commonParams()
-	data.Set("FIP", "True")
+	data.Set(fipKey, fipValue)
+
+	return buildCommonRequest(action, data)
+}
+
+func buildEntryRequest(action string, meal *Meal) (req *http.Request, err error) {
+	data := commonParams()
+	data.Set(fipKey, fipValue)
+	data.Set(surveyCodeKey, strconv.Itoa(meal.Restaurant))
+	data.Set(dayKey, padTo2(meal.Date.Day()))
+	data.Set(monthKey, padTo2(int(meal.Date.Month())))
+	data.Set(yearKey, strconv.Itoa(meal.Date.Year())[2:])
+	data.Set(hourKey, padTo2(meal.Date.Hour()))
+	data.Set(minuteKey, padTo2(meal.Date.Minute()))
 
 	return buildCommonRequest(action, data)
 }
 
 func buildSurveyRequest(action string, questionIndex string) (req *http.Request, err error) {
 	data := commonParams()
-	data.Set("IoNF", questionIndex)
+	data.Set(indexKey, questionIndex)
 
 	return buildCommonRequest(action, data)
 }

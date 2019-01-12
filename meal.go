@@ -14,19 +14,18 @@ var (
 		24191, // Zone Commerciale Grand Tour 2 - Sainte-Eulalie
 		22118, // Zone Commerciale de l'Épinette - Seclin
 	}
+
+	source = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
-type Meal interface {
-	Restaurant() int
-	Date() time.Time
+type Meal struct {
+	Restaurant int
+	Date       time.Time
 }
 
-type RandomMeal struct{}
-
-func (rm *RandomMeal) Restaurant() int {
-	return rand.Intn(len(RestaurantCodes))
-}
-
-func (rm *RandomMeal) Date() time.Time {
-	return time.Now().Add(-24 * time.Hour).Truncate(24 * time.Hour).Add(11*time.Hour + time.Duration(rand.Int63n(int64(3*time.Hour))))
+func RandomMeal() *Meal {
+	return &Meal{
+		RestaurantCodes[rand.Intn(len(RestaurantCodes))],
+		time.Now().UTC().Add(-24 * time.Hour).Truncate(24 * time.Hour).Add(11*time.Hour + time.Duration(source.Int63n(int64(3*time.Hour)))),
+	}
 }

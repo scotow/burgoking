@@ -3,15 +3,14 @@ package main
 import (
 	"fmt"
 	"github.com/scotow/burgoking"
-	"log"
+	"os"
 )
 
 func main() {
-	gen := burgoking.NewCodeGenerator()
-
-	code, err := gen.Generate()
+	code, err := burgoking.GenerateCode(nil)
 	if err != nil {
-		log.Fatalln(err)
+		_, _ = fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
 	}
 
 	fmt.Println(code)
