@@ -14,11 +14,8 @@ import (
 const (
 	baseURL = "https://www.bkvousecoute.fr"
 
-	userAgentHeader = "User-Agent"
-	userAgent       = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
-
-	contentTypeHeader = "Content-Type"
-	contentType       = "application/x-www-form-urlencoded"
+	userAgentHeader, userAgent     = "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
+	contentTypeHeader, contentType = "Content-Type", "application/x-www-form-urlencoded"
 
 	startBodyClass  = "CookieSplashPage"
 	entryBodyClass  = "CouponEntryPage"
@@ -32,12 +29,9 @@ const (
 	formAttr  = "action"
 	indexAttr = "value"
 
-	fipKey       = "FIP"
-	fipValue     = "True"
-	jsKey        = "JavaScriptEnabled"
-	jsValue      = "1"
-	cookiesKey   = "AcceptCookies"
-	cooliesValue = "Y"
+	fipKey, fipValue         = "FIP", "True"
+	jsKey, jsValue           = "JavaScriptEnabled", "1"
+	cookiesKey, cookiesValue = "AcceptCookies", "Y"
 
 	indexKey      = "IoNF"
 	surveyCodeKey = "SurveyCode"
@@ -47,7 +41,7 @@ const (
 	hourKey       = "InputHour"
 	minuteKey     = "InputMinute"
 
-	requiredRequests = 18
+	requiredRequests = 19
 )
 
 var (
@@ -82,11 +76,6 @@ func GenerateCode(meal *Meal) (code string, err error) {
 
 	requestCount := 0
 	for {
-		if requestCount > requiredRequests {
-			err = ErrTooManyRequest
-			break
-		}
-
 		resp, err = client.Do(req)
 		if err != nil {
 			break
@@ -103,6 +92,7 @@ func GenerateCode(meal *Meal) (code string, err error) {
 		}
 
 		requestCount++
+		fmt.Println(requestCount)
 		body := doc.Find("body")
 
 		if body.HasClass(finishBodyClass) {
@@ -135,6 +125,11 @@ func GenerateCode(meal *Meal) (code string, err error) {
 			if err != nil {
 				break
 			}
+		}
+
+		if requestCount >= requiredRequests {
+			err = ErrTooManyRequest
+			break
 		}
 	}
 
@@ -202,7 +197,7 @@ func padTo2(value int) string {
 func commonParams() *url.Values {
 	data := url.Values{}
 	data.Set(jsKey, jsValue)
-	data.Set(cookiesKey, cooliesValue)
+	data.Set(cookiesKey, cookiesValue)
 	return &data
 }
 
