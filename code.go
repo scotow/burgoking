@@ -92,7 +92,6 @@ func GenerateCode(meal *Meal) (code string, err error) {
 		}
 
 		requestCount++
-		fmt.Println(requestCount)
 		body := doc.Find("body")
 
 		if body.HasClass(finishBodyClass) {
