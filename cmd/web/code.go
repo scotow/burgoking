@@ -18,15 +18,22 @@ type Code struct {
 	Date    time.Time
 }
 
-type Generator struct {
+
+func newPool() *Pool {
+	return &Pool{
+		codes: make([]*Code, 0, defaultPoolSize),
+	}
+}
+
+type Pool struct {
 	lock sync.Mutex
-	pool []*Code
+	codes []*Code
 }
 
-func (g *Generator) GetCode() (code string) {
+func (p *Pool) GetCode() (code string) {
 
 }
 
-func (g *Generator) FillPool() {
+func (p *Pool) FillPool() {
 
 }
