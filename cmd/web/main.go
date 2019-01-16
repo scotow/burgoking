@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"log"
 	"net/http"
@@ -20,16 +19,22 @@ var (
 
 func handleCode(w http.ResponseWriter, r *http.Request) {
 	codeC, cancelC := make(chan string), make(chan struct{})
+	go pool.GetCode(codeC, cancelC)
 
-	pool.GetCode(codeC, cancelC)
-	code := <-codeC
+	select {
+	case code := <-codeC:
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set(contentTypeHeader, contentType)
+		_, _ = w.Write([]byte(code))
+		logrus.WithFields(logrus.Fields{"code": code, "ip": r.RemoteAddr}).Info("Code used by user.")
+	case <-r.Context().Done():
+		cancelC <- struct{}{}
+	}
 
-	fmt.Println("here")
+}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set(contentTypeHeader, contentType)
-	_, _ = w.Write([]byte(code))
-	logrus.WithFields(logrus.Fields{"code": code, "ip": r.RemoteAddr}).Info("Code used by user.")
+func handleDirect(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func listeningAddress() string {
@@ -46,5 +51,7 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir("static")))
 	http.HandleFunc("/code", handleCode)
+	http.HandleFunc("/direct", handleDirect)
+
 	log.Fatal(http.ListenAndServe(listeningAddress(), nil))
 }

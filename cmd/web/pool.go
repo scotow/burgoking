@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"github.com/google/uuid"
 	"github.com/scotow/burgoking"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	poolSize = 1
-
+	poolSize           = 3
 	expirationDuration = 24 * time.Hour
 	retryInterval      = 30 * time.Second
 )
@@ -20,17 +19,23 @@ type Code struct {
 	cancel  *time.Timer
 }
 
+type CodeRequest struct {
+	codeC chan<- string
+	id    uuid.UUID
+}
+
 type Pool struct {
 	codeLock sync.Mutex
 	codes    []Code
 
 	queueLock sync.Mutex
-	queue     []chan<- string
+	queue     []CodeRequest
 }
 
 func NewPool() *Pool {
 	return &Pool{
 		codes: make([]Code, 0),
+		queue: make([]CodeRequest, 0),
 	}
 }
 
@@ -42,14 +47,11 @@ func (p *Pool) fill() {
 	logrus.WithFields(logrus.Fields{"size": poolSize}).Info("Pool filled with codes.")
 }
 
-func (p *Pool) GetCode(r chan<- string, c <-chan struct{}) {
+func (p *Pool) GetCode(codeC chan<- string, cancelC <-chan struct{}) {
 	p.codeLock.Lock()
 	if len(p.codes) >= 1 {
 		code := p.codes[0]
 		code.cancel.Stop()
-
-		fmt.Println(code.payload)
-		r <- code.payload
 
 		p.codes = p.codes[1:]
 		p.codeLock.Unlock()
@@ -57,14 +59,25 @@ func (p *Pool) GetCode(r chan<- string, c <-chan struct{}) {
 		go p.generateCode()
 
 		logrus.WithFields(logrus.Fields{"code": code.payload}).Info("Code removed from pool and transferred.")
+		codeC <- code.payload
 	} else {
 		p.codeLock.Unlock()
 
+		payloadC := make(chan string)
+		request := CodeRequest{payloadC, uuid.New()}
+
 		p.queueLock.Lock()
-		p.queue = append(p.queue, r)
+		p.queue = append(p.queue, request)
 		p.queueLock.Unlock()
 
 		logrus.Info("Request appended to the queue.")
+
+		select {
+		case code := <-payloadC:
+			codeC <- code
+		case <-cancelC:
+			p.cancelRequest(request)
+		}
 	}
 }
 
@@ -88,7 +101,7 @@ func (p *Pool) generateCode() {
 		p.queue = p.queue[1:]
 		p.queueLock.Unlock()
 
-		r <- code.payload
+		r.codeC <- code.payload
 		go p.generateCode()
 
 		logrus.WithFields(logrus.Fields{"code": code.payload}).Info("Code generated and directly transferred.")
@@ -121,4 +134,21 @@ func (p *Pool) removeCode(code *Code) {
 	}
 
 	logrus.WithFields(logrus.Fields{"code": code.payload}).Warn("Cannot delete code from pool.")
+}
+
+func (p *Pool) cancelRequest(request CodeRequest) {
+	p.queueLock.Lock()
+	defer p.queueLock.Unlock()
+
+	for i, r := range p.queue {
+		if r.id == request.id {
+			p.queue = append(p.queue[:i], p.queue[i+1:]...)
+			go p.generateCode()
+
+			logrus.WithFields(logrus.Fields{"uuid": request.id}).Info("Request canceled.")
+			return
+		}
+	}
+
+	logrus.WithFields(logrus.Fields{"uuid": request.id}).Warn("Cannot remove request from queue.")
 }
