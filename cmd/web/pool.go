@@ -143,7 +143,6 @@ func (p *Pool) cancelRequest(request CodeRequest) {
 	for i, r := range p.queue {
 		if r.id == request.id {
 			p.queue = append(p.queue[:i], p.queue[i+1:]...)
-			go p.generateCode()
 
 			logrus.WithFields(logrus.Fields{"uuid": request.id}).Info("Request canceled.")
 			return
