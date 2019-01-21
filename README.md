@@ -15,7 +15,7 @@ Generate a Burger King's promotion code to get a free burger using Golang.
 
 #### Library
 
-Thelibrary provides two ways to generate codes. A single code can be generating or an auto refreshing pool can be used.
+The library provides two ways to generate codes. A single code can be generating or an auto refreshing pool can be used.
 
 
 ##### Generating a single code
@@ -48,9 +48,9 @@ func NewPool(size int, expiration, retry time.Duration) (pool *Pool, err error)
 ```
 
 Where
-* `size` is the total number of code in the pool.
+* `size` is the total number of codes in the pool.
 * `expiration` is the duration required for a code to be remove and auto re-generated.
-* `retry` is the duration required between two calls of the `GenerateCode` function if the first call failed for any reason.
+* `retry` is the duration required between two calls of the `GenerateCode` function if the first call failed for any reason. This prevents the pool from spaming the website.
 
 #### Binaries
 
@@ -58,7 +58,41 @@ The [cmd](https://github.com/Scotow/burgoking/blob/master/cmd) folder contains t
 
 ##### Simple command
 
+The [code](https://github.com/Scotow/burgoking/blob/master/cmd/code) command is a simple wrapper of the library. It generates a code and prints it to `stdout`.
 
+##### Simple API
+
+The [api](https://github.com/Scotow/burgoking/blob/master/cmd/api) binary starts a simple web server that returns a new promotion code to each request.
+
+##### Web friendly server
+
+The [web](https://github.com/Scotow/burgoking/blob/master/cmd/web) is a ready-for-demo binary that serves a simple, yet beautiful UI generating promotion codes using a pool.
+
+The program may setup a second private pool that requires a `Authorization` HTTP header.
+
+Here is the available flags:
+
+```sh
+Usage of web:
+  -D string
+    	private code expiration (default "24h0m0s")
+  -N int
+    	private code pool size (default 1)
+  -R string
+    	private code regeneration interval (default "30s")
+  -c string
+    	contact address on error
+  -d string
+    	public code expiration (default "24h0m0s")
+  -k string
+    	authorization token for private and direct code (disable if empty)
+  -n int
+    	public code pool size (default 3)
+  -p int
+    	listening port (default 8080)
+  -r string
+    	public code regeneration interval (default "30s")
+```
 
 ### Contribution
 
