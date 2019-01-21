@@ -56,23 +56,33 @@ Where
 
 The [cmd](https://github.com/Scotow/burgoking/blob/master/cmd) folder contains three examples of program that use the `burgoking` library.
 
-##### Simple command
+##### Simple code
 
 The [code](https://github.com/Scotow/burgoking/blob/master/cmd/code) command is a simple wrapper of the library. It generates a code and prints it to `stdout`.
 
+Here are the available options:
+
+```
+Usage of code:
+  -n int
+    	number of code to generate (default 1)
+  -p	
+  	generate each code on a different goroutine (default false)
+```
+
 ##### Simple API
 
-The [api](https://github.com/Scotow/burgoking/blob/master/cmd/api) binary starts a simple web server that returns a new promotion code to each request.
+The [api](https://github.com/Scotow/burgoking/blob/master/cmd/api) command starts a simple web server that returns a new promotion code to each request.
 
 ##### Web friendly server
 
-The [web](https://github.com/Scotow/burgoking/blob/master/cmd/web) is a ready-for-demo binary that serves a simple, yet beautiful UI generating promotion codes using a pool.
+The [web](https://github.com/Scotow/burgoking/blob/master/cmd/web) command is a ready-for-demo binary that serves a simple, yet beautiful UI generating promotion codes using a pool.
 
 The program may setup a second private pool that requires a `Authorization` HTTP header.
 
-Here is the available flags:
+Here are the available options:
 
-```sh
+```
 Usage of web:
   -D string
     	private code expiration (default "24h0m0s")
