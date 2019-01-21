@@ -1,6 +1,26 @@
 document.addEventListener('DOMContentLoaded', function() {
+    function setLabel(text) {
+        document.getElementById('label').innerText = text;
+    }
+
     function errorOccurred() {
-        document.getElementById('label').innerText = 'An error has occurred. Feel free to send me an email at \'contact@scotow.com\' to help me improve this project.';
+        const genericError = 'An error has occurred. Feel free to send me an email to the admin of the website.';
+
+        request.onreadystatechange = function() {
+            if (request.readyState === XMLHttpRequest.DONE) {
+                if (request.status === 200) {
+                    setLabel('An error has occurred. Feel free to send me an email at \'' + request.responseText + '\' to help me improve this project.');
+                } else {
+                    setLabel(genericError);
+                }
+            }
+        };
+        request.onerror = function () {
+            setLabel(genericError);
+        };
+
+        request.open('GET', '/contact', true);
+        request.send(null);
     }
 
     const request = new XMLHttpRequest();
@@ -8,16 +28,16 @@ document.addEventListener('DOMContentLoaded', function() {
     request.onreadystatechange = function() {
         if (request.readyState === XMLHttpRequest.DONE) {
             if (request.status === 200) {
-                document.getElementById('label').innerText = request.responseText;
-            } else if (request.status === 400) {
+                setLabel(request.responseText);
+            } else {
                 errorOccurred()
             }
+        } else if (request.readyState === XMLHttpRequest.LOADING) {
+            setLabel('Loading your Burger');
         }
     };
     request.onerror = errorOccurred;
 
-    request.open('GET', '/code', true);
-    request.send();
-
-    document.getElementById('label').innerText = 'Loading your Burger';
+    request.open('POST', '/code', true);
+    request.send(null);
 });

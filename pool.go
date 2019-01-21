@@ -1,50 +1,63 @@
-package main
+package burgoking
 
 import (
 	"github.com/google/uuid"
-	"github.com/scotow/burgoking"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
 
-const (
-	poolSize           = 3
-	expirationDuration = 24 * time.Hour
-	retryInterval      = 30 * time.Second
+var (
+	InvalidPoolSettings = errors.New("invalid pool settings")
 )
 
-type Code struct {
+type code struct {
 	payload string
 	cancel  *time.Timer
 }
 
-type CodeRequest struct {
+type codeRequest struct {
 	codeC chan<- string
 	id    uuid.UUID
 }
 
 type Pool struct {
+	poolSize int
+	expiration time.Duration
+	retry time.Duration
+
 	codeLock sync.Mutex
-	codes    []Code
+	codes    []code
 
 	queueLock sync.Mutex
-	queue     []CodeRequest
+	queue     []codeRequest
 }
 
-func NewPool() *Pool {
-	return &Pool{
-		codes: make([]Code, 0),
-		queue: make([]CodeRequest, 0),
+func NewPool(poolSize int, expiration, retry time.Duration) (pool *Pool, err error) {
+	if poolSize <= 0 || expiration <= 0 || retry < 0 {
+		err = InvalidPoolSettings
+		return
 	}
+
+	pool = &Pool{
+		poolSize: poolSize,
+		expiration: expiration,
+		retry: retry,
+
+		codes: make([]code, 0),
+		queue: make([]codeRequest, 0),
+	}
+
+	go pool.fill()
+
+	return
 }
 
 func (p *Pool) fill() {
-	for i := 0; i < poolSize; i++ {
+	for i := 0; i < p.poolSize; i++ {
 		p.generateCode()
 	}
-
-	logrus.WithFields(logrus.Fields{"size": poolSize}).Info("Pool filled with codes.")
 }
 
 func (p *Pool) GetCode(codeC chan<- string, cancelC <-chan struct{}) {
@@ -64,13 +77,13 @@ func (p *Pool) GetCode(codeC chan<- string, cancelC <-chan struct{}) {
 		p.codeLock.Unlock()
 
 		payloadC := make(chan string)
-		request := CodeRequest{payloadC, uuid.New()}
+		request := codeRequest{payloadC, uuid.New()}
 
 		p.queueLock.Lock()
 		p.queue = append(p.queue, request)
 		p.queueLock.Unlock()
 
-		logrus.Info("Request appended to the queue.")
+		logrus.WithFields(logrus.Fields{"uuid": request.id}).Info("Request appended to the queue.")
 
 		select {
 		case code := <-payloadC:
@@ -82,16 +95,16 @@ func (p *Pool) GetCode(codeC chan<- string, cancelC <-chan struct{}) {
 }
 
 func (p *Pool) generateCode() {
-	var code Code
+	var c code
 
 	for {
-		payload, err := burgoking.GenerateCode(nil)
+		payload, err := GenerateCode(nil)
 		if err == nil {
-			code = Code{payload: payload}
+			c = code{payload: payload}
 			break
 		} else {
 			logrus.WithFields(logrus.Fields{"error": err}).Warn("Code generation failed.")
-			time.Sleep(retryInterval)
+			time.Sleep(p.retry)
 		}
 	}
 
@@ -101,25 +114,25 @@ func (p *Pool) generateCode() {
 		p.queue = p.queue[1:]
 		p.queueLock.Unlock()
 
-		r.codeC <- code.payload
+		r.codeC <- c.payload
 		go p.generateCode()
 
-		logrus.WithFields(logrus.Fields{"code": code.payload}).Info("Code generated and directly transferred.")
+		logrus.WithFields(logrus.Fields{"code": c.payload}).Info("Code generated and directly transferred.")
 	} else {
 		p.queueLock.Unlock()
 
 		p.codeLock.Lock()
-		code.cancel = time.AfterFunc(expirationDuration, func() {
-			p.removeCode(&code)
+		c.cancel = time.AfterFunc(p.expiration, func() {
+			p.expireCode(&c)
 		})
-		p.codes = append(p.codes, code)
+		p.codes = append(p.codes, c)
 		p.codeLock.Unlock()
 
-		logrus.WithFields(logrus.Fields{"code": code.payload}).Info("Code generated and added to the pool.")
+		logrus.WithFields(logrus.Fields{"code": c.payload}).Info("Code generated and added to the pool.")
 	}
 }
 
-func (p *Pool) removeCode(code *Code) {
+func (p *Pool) expireCode(code *code) {
 	p.codeLock.Lock()
 	defer p.codeLock.Unlock()
 
@@ -128,7 +141,7 @@ func (p *Pool) removeCode(code *Code) {
 			p.codes = append(p.codes[:i], p.codes[i+1:]...)
 			go p.generateCode()
 
-			logrus.WithFields(logrus.Fields{"code": code.payload}).Info("Code deleted from the pool.")
+			logrus.WithFields(logrus.Fields{"code": code.payload}).Info("Code deleted from the pool for expiration.")
 			return
 		}
 	}
@@ -136,7 +149,7 @@ func (p *Pool) removeCode(code *Code) {
 	logrus.WithFields(logrus.Fields{"code": code.payload}).Warn("Cannot delete code from pool.")
 }
 
-func (p *Pool) cancelRequest(request CodeRequest) {
+func (p *Pool) cancelRequest(request codeRequest) {
 	p.queueLock.Lock()
 	defer p.queueLock.Unlock()
 
