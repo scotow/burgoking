@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/scotow/burgoking"
 	"github.com/sirupsen/logrus"
+	"github.com/tomasen/realip"
 	"log"
 	"net/http"
 	"strconv"
@@ -38,7 +39,7 @@ func handleCodeRequest(p *burgoking.Pool, t string, w http.ResponseWriter, r *ht
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write([]byte(code))
-		logrus.WithFields(logrus.Fields{"code": code, "ip": r.RemoteAddr, "type": t}).Info("Code used by user.")
+		logrus.WithFields(logrus.Fields{"code": code, "ip": realip.FromRequest(r), "type": t}).Info("Code used by user.")
 	case <-r.Context().Done():
 		cancelC <- struct{}{}
 	}
