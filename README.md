@@ -107,4 +107,8 @@ Furthermore, if you went to restaurant which its number isn't in the restaurants
 
 I assumes no responsibility or liability for the use of the software, conveys no license or title under any patent, copyright, or mask work right to the product.
 
+### JavaScript version
+
+A deprecated and no more maintained version of this project made with JavaScript (NodeJS) and CasperJS is availiable [here](https://github.com/Scotow/bk-generator).
+
 ***Enjoy your meal!***
