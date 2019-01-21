@@ -35,5 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setLabel('Loading your Burger');
     }, function (request) {
         setLabel(request.responseText);
+        document.title = request.responseText;
+        new Audio('/sounds/burger.m4a').play();
     }, errorOccurred);
 });
