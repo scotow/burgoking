@@ -23,7 +23,7 @@ type codeRequest struct {
 }
 
 type Pool struct {
-	poolSize int
+	size int
 	expiration time.Duration
 	retry time.Duration
 
@@ -34,14 +34,14 @@ type Pool struct {
 	queue     []codeRequest
 }
 
-func NewPool(poolSize int, expiration, retry time.Duration) (pool *Pool, err error) {
-	if poolSize <= 0 || expiration <= 0 || retry < 0 {
+func NewPool(size int, expiration, retry time.Duration) (pool *Pool, err error) {
+	if size <= 0 || expiration <= 0 || retry < 0 {
 		err = InvalidPoolSettings
 		return
 	}
 
 	pool = &Pool{
-		poolSize: poolSize,
+		size: size,
 		expiration: expiration,
 		retry: retry,
 
@@ -55,7 +55,7 @@ func NewPool(poolSize int, expiration, retry time.Duration) (pool *Pool, err err
 }
 
 func (p *Pool) fill() {
-	for i := 0; i < p.poolSize; i++ {
+	for i := 0; i < p.size; i++ {
 		p.generateCode()
 	}
 }
