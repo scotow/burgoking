@@ -10,9 +10,7 @@ import (
 
 var (
 	count 		= flag.Int("n", 1, "number of code to generate")
-	parallel 	= flag.Bool("p", true, "generate each code on a different goroutine")
-
-	wg sync.WaitGroup
+	parallel 	= flag.Bool("p", false, "generate each code on a different goroutine")
 )
 
 func generateCode() {
@@ -23,6 +21,10 @@ func generateCode() {
 	}
 
 	fmt.Println(code)
+}
+
+func generateCodeWait(wg *sync.WaitGroup) {
+	generateCode()
 	wg.Done()
 }
 
@@ -35,9 +37,11 @@ func main() {
 	}
 
 	if *parallel {
+		var wg sync.WaitGroup
+
 		for i := 0; i < *count; i++ {
 			wg.Add(1)
-			go generateCode()
+			go generateCodeWait(&wg)
 		}
 
 		wg.Wait()
