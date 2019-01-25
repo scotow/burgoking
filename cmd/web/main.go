@@ -13,14 +13,14 @@ import (
 
 var (
 	publicPool 	*burgoking.Pool
-	privatePool *burgoking.Pool
+	privatePool 	*burgoking.Pool
 )
 
 var (
-	port = flag.Int("p", 8080, "listening port")
-	contact = flag.String("c", "", "contact address on error")
+	port 			= flag.Int("p", 8080, "listening port")
+	contact 		= flag.String("c", "", "contact address on error")
 
-	publicSize 			= flag.Int("n", 3, "public code pool size")
+	publicSize 		= flag.Int("n", 3, "public code pool size")
 	publicExpiration 	= flag.String("d", time.Duration(24 * time.Hour).String(), "public code expiration")
 	publicRetry 		= flag.String("r", time.Duration(30 * time.Second).String(), "public code regeneration interval")
 
