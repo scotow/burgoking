@@ -7,7 +7,7 @@ Generate a Burger King's promotion code to get a free burger using Golang.
 
 ### Installation
 
-`$ go get github.com/Scotow/burgoking`
+`$ go get github.com/scotow/burgoking`
 
 
 ### Examples
