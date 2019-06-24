@@ -14,7 +14,11 @@ html {
 body {
     margin: 0;
     padding: 0;
-    position: relative;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 body::after {
@@ -27,23 +31,14 @@ body::after {
     background: #15b154;
 }
 
-.loader {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.loader > .video {
+.video {
+    flex: 0;
     width: 80vw;
     max-width: 300px;
     border-radius: 35%;
 }
 
-.loader > .label {
+.label {
     margin-top: 20px;
     text-align: center;
     color: white;
@@ -51,7 +46,7 @@ body::after {
     font-family: 'Lobster', sans-serif;
 }
 
-.loader > .label.done {
+.label.done {
     margin-top: 18px;
     font-size: 44px;
 }
