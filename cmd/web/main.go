@@ -12,22 +12,22 @@ import (
 )
 
 var (
-	publicPool 	*burgoking.Pool
-	privatePool 	*burgoking.Pool
+	publicPool  *burgoking.Pool
+	privatePool *burgoking.Pool
 )
 
 var (
-	port 			= flag.Int("p", 8080, "listening port")
-	contact 		= flag.String("c", "", "contact address on error")
+	port    = flag.Int("p", 8080, "listening port")
+	contact = flag.String("c", "", "contact address on error")
 
-	publicSize 		= flag.Int("n", 3, "public code pool size")
-	publicExpiration 	= flag.String("d", time.Duration(24 * time.Hour).String(), "public code expiration")
-	publicRetry 		= flag.String("r", time.Duration(30 * time.Second).String(), "public code regeneration interval")
+	publicSize       = flag.Int("n", 3, "public code pool size")
+	publicExpiration = flag.String("d", time.Duration(24*time.Hour).String(), "public code expiration")
+	publicRetry      = flag.String("r", time.Duration(30*time.Second).String(), "public code regeneration interval")
 
-	privateDirectKey	= flag.String("k", "", "authorization token for private and direct code (disable if empty)")
-	privateSize 		= flag.Int("N", 1, "private code pool size")
-	privateExpiration 	= flag.String("D", time.Duration(24 * time.Hour).String(), "private code expiration")
-	privateRetry 		= flag.String("R", time.Duration(30 * time.Second).String(), "private code regeneration interval")
+	privateDirectKey  = flag.String("k", "", "authorization token for private and direct code (disable if empty)")
+	privateSize       = flag.Int("N", 1, "private code pool size")
+	privateExpiration = flag.String("D", time.Duration(24*time.Hour).String(), "private code expiration")
+	privateRetry      = flag.String("R", time.Duration(30*time.Second).String(), "private code regeneration interval")
 )
 
 func handleCodeRequest(p *burgoking.Pool, t string, w http.ResponseWriter, r *http.Request) {
@@ -118,8 +118,8 @@ func main() {
 		}
 		privatePool = pool
 
-		http.HandleFunc("/private", 	handlePrivate)
-		http.HandleFunc("/direct", 	handleDirect)
+		http.HandleFunc("/private", handlePrivate)
+		http.HandleFunc("/direct", handleDirect)
 
 		logrus.Info("Private and direct code generation activated.")
 	}
@@ -129,5 +129,5 @@ func main() {
 		http.HandleFunc("/contact", handleContact)
 	}
 
-	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(*port), nil))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
 }
