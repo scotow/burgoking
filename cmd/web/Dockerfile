@@ -1,6 +1,6 @@
-############################
+################################
 # STEP 1 build executable binary
-############################
+################################
 FROM golang:alpine AS builder
 
 # Install git.
@@ -21,10 +21,13 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/b
 ############################
 FROM scratch
 
-# Copy our static executable.
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# Copy our static executable and static files.
 COPY --from=builder /go/bin/burgoking /burgoking
 COPY static /static
+
+# Copy SSL certificates for HTTPS connections.
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
 
 # Run the hello binary.
 ENTRYPOINT ["/burgoking"]
