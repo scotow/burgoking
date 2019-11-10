@@ -10,11 +10,16 @@ jobs:
     steps:
       - name: Pulling repo
         uses: actions/checkout@v1
-      - name: Building image
-        run: docker build . -t docker.pkg.github.com/$GITHUB_REPOSITORY/web:$GITHUB_SHA -t docker.pkg.github.com/$GITHUB_REPOSITORY/web:latest
+      - name: Building latest image
+        run: docker build cmd/web -t docker.pkg.github.com/$GITHUB_REPOSITORY/web
+      - name: Adding additional tags
+        run: |
+          docker tag docker.pkg.github.com/$GITHUB_REPOSITORY/web docker.pkg.github.com/$GITHUB_REPOSITORY/web:$GITHUB_SHA
+          docker tag docker.pkg.github.com/$GITHUB_REPOSITORY/web docker.pkg.github.com/$GITHUB_REPOSITORY/web:$(rev <<< $GITHUB_REF | cut -d/ -f1 | rev | tr -d v) 
       - name: Loging in
         run: docker login docker.pkg.github.com -u $(cut -d/ -f1 <<< $GITHUB_REPOSITORY) -p ${{ secrets.GITHUB_TOKEN }}
       - name: Pushing image
         run: |
+          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/web
           docker push docker.pkg.github.com/$GITHUB_REPOSITORY/web:$GITHUB_SHA
-          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/web:latest
+          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/web:$(rev <<< $GITHUB_REF | cut -d/ -f1 | rev | tr -d v)
