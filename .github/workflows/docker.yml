@@ -1,0 +1,46 @@
+name: Docker
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pulling repo
+        uses: actions/checkout@v1
+      - name: Building latest image
+        run: docker build -f cmd/web/Dockerfile -t image:latest .
+      - name: Adding additional tags
+        run: |
+          REPO=$(cut -d/ -f2 <<< $GITHUB_REPOSITORY)
+          VERSION=$(rev <<< $GITHUB_REF | cut -d/ -f1 | rev | tr -d v)
+          docker tag image:latest docker.pkg.github.com/$GITHUB_REPOSITORY/$REPO-web:latest
+          docker tag image:latest docker.pkg.github.com/$GITHUB_REPOSITORY/$REPO-web:$GITHUB_SHA
+          docker tag image:latest docker.pkg.github.com/$GITHUB_REPOSITORY/$REPO-web:$VERSION
+      - name: Loging in
+        run: |
+          USER=$(cut -d/ -f1 <<< $GITHUB_REPOSITORY)
+          docker login docker.pkg.github.com -u $USER -p ${{ secrets.GITHUB_TOKEN }}
+      - name: Pushing image
+        run: |
+          REPO=$(cut -d/ -f2 <<< $GITHUB_REPOSITORY)
+          VERSION=$(rev <<< $GITHUB_REF | cut -d/ -f1 | rev | tr -d v)
+          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/$REPO-web:latest
+          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/$REPO-web:$GITHUB_SHA
+          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/$REPO-web:$VERSION
+      - name: Writing stack config file
+        run: |
+          VERSION=$(rev <<< $GITHUB_REF | cut -d/ -f1 | rev | tr -d v)
+          echo '${{ secrets.DOCKER_STACK_YAML }}' > stack.yaml
+          sed -i "s/latest/$VERSION/g" stack.yaml
+      - name: Deploying new version
+        uses: scotow/docker-ssh-action@v2
+        with:
+          remote_host: ${{ secrets.REMOTE_HOST }}
+          remote_user: ${{ secrets.REMOTE_USER }}
+          remote_ssh_public_key: ${{ secrets.REMOTE_SSH_PUBLIC_KEY }}
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          args: stack deploy -c stack.yaml --with-registry-auth burgoking
