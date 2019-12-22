@@ -27,11 +27,11 @@ document.addEventListener('DOMContentLoaded', function() {
         sendRequest('GET', '/contact', null, function (request) {
             setLabel('An error has occurred. Feel free to send me an email at \'' + request.responseText + '\' to help me improve this project.');
         }, function () {
-            setLabel('An error has occurred. Feel free to send an email to the admin of the website.');
+            setLabel('An error has occurred. Feel free to send an email to the admin of this website.');
         });
     }
 
-    sendRequest('POST', '/code', function() {
+    sendRequest('GET', '/code', function() {
         setLabel('Loading your Burger');
     }, function (request) {
         setLabel(request.responseText);

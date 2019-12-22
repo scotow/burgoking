@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
-	"github.com/scotow/burgoking"
-	"github.com/sirupsen/logrus"
-	"github.com/tomasen/realip"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/scotow/burgoking"
+	"github.com/sirupsen/logrus"
+	"github.com/tomasen/realip"
 )
 
 var (
@@ -21,13 +22,13 @@ var (
 	contact = flag.String("c", "", "contact address on error")
 
 	publicSize       = flag.Int("n", 3, "public code pool size")
-	publicExpiration = flag.String("d", time.Duration(24*time.Hour).String(), "public code expiration")
-	publicRetry      = flag.String("r", time.Duration(30*time.Second).String(), "public code regeneration interval")
+	publicExpiration = flag.Duration("d", 24*time.Hour, "public code expiration")
+	publicRetry      = flag.Duration("r", 30*time.Second, "public code regeneration interval")
 
 	privateDirectKey  = flag.String("k", "", "authorization token for private and direct code (disable if empty)")
 	privateSize       = flag.Int("N", 1, "private code pool size")
-	privateExpiration = flag.String("D", time.Duration(24*time.Hour).String(), "private code expiration")
-	privateRetry      = flag.String("R", time.Duration(30*time.Second).String(), "private code regeneration interval")
+	privateExpiration = flag.Duration("D", 24*time.Hour, "private code expiration")
+	privateRetry      = flag.Duration("R", 30*time.Second, "private code regeneration interval")
 )
 
 func handleCodeRequest(p *burgoking.Pool, t string, w http.ResponseWriter, r *http.Request) {
@@ -78,21 +79,6 @@ func handleContact(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte(*contact))
 }
 
-func parseDuration(s string) time.Duration {
-	var duration time.Duration
-	durationSec, err := strconv.Atoi(s)
-	if err == nil {
-		return time.Duration(durationSec) * time.Second
-	} else {
-		duration, err = time.ParseDuration(s)
-		if err == nil {
-			return duration
-		}
-	}
-
-	return -1
-}
-
 func main() {
 	flag.Parse()
 
@@ -100,7 +86,7 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("static")))
 
 	// Public pool.
-	pool, err := burgoking.NewPool(*publicSize, parseDuration(*publicExpiration), parseDuration(*publicRetry))
+	pool, err := burgoking.NewPool(*publicSize, *publicExpiration, *publicRetry)
 	if err != nil {
 		logrus.Fatal(err)
 		return
@@ -111,7 +97,7 @@ func main() {
 
 	// Private pool.
 	if *privateDirectKey != "" {
-		pool, err = burgoking.NewPool(*privateSize, parseDuration(*privateExpiration), parseDuration(*privateRetry))
+		pool, err = burgoking.NewPool(*privateSize, *privateExpiration, *privateRetry)
 		if err != nil {
 			logrus.Fatal(err)
 			return
