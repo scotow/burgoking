@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"crypto/tls"
 )
 
 const (
@@ -57,7 +58,12 @@ func GenerateCode(meal *Meal) (code string, err error) {
 	if err != nil {
 		return
 	}
-	client := http.Client{Jar: jar}
+	client := http.Client{
+		Transport: &http.Transport{
+        		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+    		},
+		Jar: jar,
+	}
 
 	if meal == nil {
 		meal = RandomMeal()
