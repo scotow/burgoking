@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	baseURL = "https://www.bkvousecoute.fr"
+	baseURL = "https://www.mybkexperience.com"
 
 	userAgentHeader, userAgent     = "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
 	contentTypeHeader, contentType = "Content-Type", "application/x-www-form-urlencoded"
 
-	startBodyClass  = "CookieSplashPage"
-	entryBodyClass  = "CouponEntryPage"
+	storeIdBodyClass  = "CouponEntry_StorePage"
+	visitAreaDatetimeBodyClass = "CouponEntry_SimpleCode"
 	finishBodyClass = "Finish"
 
 	surveyEntryId = "surveyEntryForm"
@@ -30,17 +30,20 @@ const (
 	formAttr  = "action"
 	indexAttr = "value"
 
+	pKey, pValue			 = "P", "2"
 	fipKey, fipValue         = "FIP", "True"
 	jsKey, jsValue           = "JavaScriptEnabled", "1"
 	cookiesKey, cookiesValue = "AcceptCookies", "Y"
 
+	storeIdKey 	  = "Initial_StoreID"
 	indexKey      = "IoNF"
-	surveyCodeKey = "SurveyCode"
 	dayKey        = "InputDay"
 	monthKey      = "InputMonth"
 	yearKey       = "InputYear"
 	hourKey       = "InputHour"
 	minuteKey     = "InputMinute"
+	meridianKey	  = "InputMeridian"
+	locationKey   = "BKLocation"
 
 	requiredRequests = 19
 )
@@ -110,12 +113,12 @@ func GenerateCode(meal *Meal) (code string, err error) {
 			break
 		}
 
-		if body.HasClass(startBodyClass) {
-			req, err = buildStartRequest(nextAction)
+		if body.HasClass(storeIdBodyClass) {
+			req, err = buildStartRequest(nextAction, meal.Restaurant)
 			if err != nil {
 				break
 			}
-		} else if body.HasClass(entryBodyClass) {
+		} else if body.HasClass(visitAreaDatetimeBodyClass) {
 			req, err = buildEntryRequest(nextAction, meal)
 			if err != nil {
 				break
@@ -181,7 +184,7 @@ func parseIndex(doc *goquery.Document) (index string, err error) {
 }
 
 func parseCode(doc *goquery.Document) (code string, err error) {
-	parts := strings.Split(doc.Find("."+codeClass).Text(), " : ")
+	parts := strings.Split(doc.Find("."+codeClass).Text(), ": ")
 	if len(parts) != 2 {
 		err = ErrInvalidCode
 		return
@@ -226,9 +229,10 @@ func buildCommonRequest(action string, data *url.Values) (req *http.Request, err
 	return
 }
 
-func buildStartRequest(action string) (req *http.Request, err error) {
+func buildStartRequest(action string, restaurant int) (req *http.Request, err error) {
 	data := commonParams()
-	data.Set(fipKey, fipValue)
+	data.Set(pKey, pValue)
+	data.Set(storeIdKey, strconv.Itoa(restaurant))
 
 	return buildCommonRequest(action, data)
 }
@@ -236,12 +240,14 @@ func buildStartRequest(action string) (req *http.Request, err error) {
 func buildEntryRequest(action string, meal *Meal) (req *http.Request, err error) {
 	data := commonParams()
 	data.Set(fipKey, fipValue)
-	data.Set(surveyCodeKey, strconv.Itoa(meal.Restaurant))
+	data.Set(pKey, pValue)
 	data.Set(dayKey, padTo2(meal.Date.Day()))
 	data.Set(monthKey, padTo2(int(meal.Date.Month())))
 	data.Set(yearKey, strconv.Itoa(meal.Date.Year())[2:])
 	data.Set(hourKey, padTo2(meal.Date.Hour()))
 	data.Set(minuteKey, padTo2(meal.Date.Minute()))
+	data.Set(locationKey, "TX")
+	data.Set(meridianKey, "PM")
 
 	return buildCommonRequest(action, data)
 }
