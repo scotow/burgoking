@@ -14,7 +14,7 @@ const (
 )
 
 func handle(w http.ResponseWriter, _ *http.Request) {
-	code, err := burgoking.GenerateCode(nil)
+	code, err := burgoking.GenerateCodeStatic(nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

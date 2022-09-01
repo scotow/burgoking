@@ -14,7 +14,7 @@ var (
 )
 
 func generateCode() {
-	code, err := burgoking.GenerateCode(nil)
+	code, err := burgoking.GenerateCodeStatic(nil)
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)

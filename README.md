@@ -1,5 +1,7 @@
 # burgoking
 
+⚠️ As of September 2022, Burger King migrated their survey system to a third party company, resulting to changes that require an almost complete rebuild of this project. Unfortunately, I cannot find the time nor the will to do it. So, I replaced the generation algorithm with something local and static. In almost all cases, this generator will work (I never encountered a BK employee that checked the numbers). ⚠️
+
 🍔 **Burger King - Free Burger Code Generator** 🍔
 
 Generate a Burger King's promotion code to get a free burger using Golang.
@@ -74,9 +76,9 @@ Usage of code:
 
 The [api](https://github.com/Scotow/burgoking/blob/master/cmd/api) command starts a simple web server that returns a new promotion code to each request.
 
-##### Web friendly server
+##### (Old) Web friendly server
 
-The [web](https://github.com/Scotow/burgoking/blob/master/cmd/web) command is a ready-for-demo binary that serves a simple, yet beautiful UI generating promotion codes using a pool.
+The [web](https://github.com/Scotow/burgoking/blob/master/cmd/web_original) command is a ready-for-demo binary that serves a simple, yet beautiful UI generating promotion codes using a pool.
 
 The program may setup a second private pool that requires a `Authorization` HTTP header.
 
