@@ -108,9 +108,9 @@ Usage of web:
 
 ### Contribution
 
-Feedback are appreciated. Feel free to open an issue or a pull request if needed.
+Feedbacks are appreciated. Feel free to open an issue or a pull request if needed.
 
-Furthermore, if you went to restaurant which its number isn't in the restaurants [list](https://github.com/Scotow/burgoking/blob/master/meal.go#L9), a merge request to add it is appreciated.
+Furthermore, if you went to a restaurant which its number isn't in the restaurants [list](https://github.com/Scotow/burgoking/blob/master/meal.go#L9), a merge request to add it is appreciated.
 
 
 ### Disclaimer
