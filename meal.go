@@ -14,8 +14,8 @@ var (
 		// 24191, // Zone Commerciale Grand Tour 2 - Sainte-Eulalie
 		// 22118, // Zone Commerciale de l'Épinette - Seclin
 		
-		//1677, // Tyler - Texas
-		4908,  // Fullerton, California 
+		1677, // Tyler - Texas
+		// 4908, // Fullerton, California 
 	}
 
 	source = rand.New(rand.NewSource(time.Now().UnixNano()))
